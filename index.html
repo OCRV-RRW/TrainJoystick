@@ -121,44 +121,154 @@
 		background-image: url("header 1.png");
 	}
 	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Запрос Разрешения на Wake Lock</title>
+	<style>
+		/* Стили для попапа */
+		#popup {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -150%);
+			background-color: rgb(132, 131, 131);
+			border: 2px solid #d09c0d;
+			text-align: center;
+			border-radius: 20px;
+			padding: 20px;
+			z-index: 1000;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+			transition: transform 0.3s ease; 
+		}
+		#allow{
+			background-color: rgb(0, 72, 0);
+		}
+		#cancel{
+			background-color: rgb(81, 51, 0);
+		}
+		button{
+			align-self: center;
+			color: rgb(168, 168, 168);
+			border-radius: 10px;
+			border-color: #000000;
+			border-width: 1px;
+			font-size: 16px;
+			padding: 10px;
+			margin: 5px;
+			font-family: 'Arial', sans-serif;
+		}
+		p {
+			color: rgb(39, 39, 39);
+			font-family: 'Arial', sans-serif;
+			font-size: 18px;
+		}
+		#overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.5);
+			z-index: 999;
+		}
 
+		.show {
+            display: block;
+            animation: popup-in 0.3s forwards; /* Анимация при открытии */
+        }
+        
+        .hide {
+            animation: popup-out 0.3s forwards; /* Анимация при закрытии */
+        }
+
+		@keyframes popup-in {
+			0% {
+                transform: translate(-50%, -700%);
+            }
+            80% {
+                transform: translate(-50%, -40%);
+            }
+            90% {
+                transform: translate(-50%, -60%);
+            }
+            100% {
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes popup-out {
+			0% {
+                transform: translate(-50%, -50%);
+            }
+            20% {
+                transform: translate(-50%, -40%);
+            }
+			40% {
+                transform: translate(-50%, -100%);
+            }
+            100% {
+                transform: translate(-50%, 800%);
+            }
+        }
+	</style>
 	<script>
-		let wakeLock = null;
+        let wakeLock = null;
 
-		async function enableWakeLock() {
-			try {
-				wakeLock = await navigator.wakeLock.request('screen');
-				console.log('Wake Lock active!');
-			} catch (e) {
-				console.error(`${e.name}, ${e.message}`);
-			}
-		}
+        async function enableWakeLock() {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock is active!');
+            } catch (e) {
+				showPopup()
+                console.error(`${e.name}, ${e.message}`);
+            }
+        }
 
-		async function releaseWakeLock() {
-			if (wakeLock !== null) {
-				await wakeLock.release();
-				wakeLock = null;
-				console.log('Wake Lock released!');
-			}
-		}
+        function showPopup() {
+            const popup = document.getElementById('popup');
+            const overlay = document.getElementById('overlay');
+            overlay.style.display = 'block';
+            popup.classList.add('show');
+        }
 
-		document.addEventListener('visibilitychange', async () => {
-			if (document.visibilityState === 'visible') {
-				await enableWakeLock();
-			} else {
-				await releaseWakeLock();
-			}
-		});
+        function hidePopup() {
+            const popup = document.getElementById('popup');
+            popup.classList.add('hide');
+            popup.addEventListener('animationend', () => {
+                popup.classList.remove('show', 'hide');
+                popup.style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
+            }, { once: true });
+        }
 
-		// Вызов при загрузке страницы
-		window.onload = async () => {
-			await enableWakeLock();
-		};
-	</script>
+        function requestWakeLock() {
+            hidePopup();
+            enableWakeLock();
+            localStorage.setItem('wakeLockAllowed', 'true'); // Сохраняем согласие пользователя
+        }
+
+        function checkWakeLockPreference() {
+            return localStorage.getItem('wakeLockAllowed') === 'true';
+        }
+
+        window.onload = () => {
+            if (!checkWakeLockPreference()) {
+                showPopup();  // Показываем попап, если пользователь не дал разрешение
+            } else {
+                enableWakeLock(); // Активируем Wake Lock, если разрешение уже дано
+            }
+        };
+    </script>
 
 </head>
 
 <body>
+	<div id="overlay"></div>
+    <div id="popup">
+        <p>Для корректной работы джойстика нужно, чтобы экран не выключался пока открыта страница</p>
+        <button id="allow" onclick="requestWakeLock()">Разрешить</button>
+        <button id="cancel" onclick="hidePopup()">Запретить</button>
+    </div>
 
 	<div id="app-container" class="canvas-app-container">
 		<div id="running-from-file-warning" style="display: none; margin: 3em;">
