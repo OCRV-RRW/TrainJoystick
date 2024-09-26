@@ -121,6 +121,41 @@
 		background-image: url("header 1.png");
 	}
 	</style>
+
+	<script>
+		let wakeLock = null;
+
+		async function enableWakeLock() {
+			try {
+				wakeLock = await navigator.wakeLock.request('screen');
+				console.log('Wake Lock active!');
+			} catch (e) {
+				console.error(`${e.name}, ${e.message}`);
+			}
+		}
+
+		async function releaseWakeLock() {
+			if (wakeLock !== null) {
+				await wakeLock.release();
+				wakeLock = null;
+				console.log('Wake Lock released!');
+			}
+		}
+
+		document.addEventListener('visibilitychange', async () => {
+			if (document.visibilityState === 'visible') {
+				await enableWakeLock();
+			} else {
+				await releaseWakeLock();
+			}
+		});
+
+		// Вызов при загрузке страницы
+		window.onload = async () => {
+			await enableWakeLock();
+		};
+	</script>
+
 </head>
 
 <body>
