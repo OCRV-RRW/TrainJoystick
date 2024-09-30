@@ -157,17 +157,16 @@ app_icon =
 [html5]
 custom_heap_size = 0
 heap_size = 256
-htmlfile = /manifest/engine_template.html
-cssfile = /builtins/manifests/web/dark_theme.css
-splash_image = /resources/images/header 1.png
+htmlfile = /builtins/manifests/web/engine_template.html
+cssfile = /builtins/manifests/web/light_theme.css
 archive_location_prefix = archive
 archive_location_suffix = 
 engine_arguments = --verify-graphics-calls=false
 wasm_streaming = 0
-show_fullscreen_button = 0
-show_made_with_defold = 0
-show_console_banner = 0
-scale_mode = fit
+show_fullscreen_button = 1
+show_made_with_defold = 1
+show_console_banner = 1
+scale_mode = downscale_fit
 
 [particle_fx]
 max_count = 64
@@ -206,16 +205,4 @@ max_tile_count = 2048
 [engine]
 run_while_iconified = 0
 fixed_update_frequency = 60
-
-[druid]
-input_text = text
-input_touch = touch
-input_marked_text = marked_text
-input_key_esc = key_esc
-input_key_back = key_back
-input_key_enter = key_enter
-input_key_backspace = key_backspace
-input_multitouch = touch_multi
-input_scroll_up = mouse_wheel_up
-input_scroll_down = mouse_wheel_down
 

@@ -384,14 +384,14 @@ function createWasm() {
 var tempDouble;
 var tempI64;
 var ASM_CONSTS = {
-  277696: function _() {
+  659872: function _() {
     if (navigator.userAgent.toLowerCase().indexOf("chrome") > -1) {
       console.log("%c    %c    Made with Defold    %c    %c    https://www.defold.com", "background: #fd6623; padding:5px 0; border: 5px;", "background: #272c31; color: #fafafa; padding:5px 0;", "background: #39a3e4; padding:5px 0;", "background: #ffffff; color: #000000; padding:5px 0;");
     } else {
       console.log("Made with Defold -=[ https://www.defold.com ]=-");
     }
   },
-  278124: function _($0) {
+  660300: function _($0) {
     var jsResult;
     var isSuccess = 1;
     try {
@@ -405,13 +405,13 @@ var ASM_CONSTS = {
     var stringOnWasmHeap = stringToNewUTF8(jsResult);
     return stringOnWasmHeap;
   },
-  278392: function _() {
+  660568: function _() {
     document.removeEventListener("click", Module.__defold_interaction_listener);
     document.removeEventListener("keyup", Module.__defold_interaction_listener);
     document.removeEventListener("touchend", Module.__defold_interaction_listener);
     Module.__defold_interaction_listener = undefined;
   },
-  278680: function _() {
+  660856: function _() {
     Module.__defold_interaction_listener = function () {
       _dmScript_RunInteractionCallback();
     };
@@ -419,10 +419,10 @@ var ASM_CONSTS = {
     document.addEventListener("keyup", Module.__defold_interaction_listener);
     document.addEventListener("touchend", Module.__defold_interaction_listener);
   },
-  279001: function _($0) {
+  661177: function _($0) {
     Module.printErr(UTF8ToString($0));
   },
-  279040: function _($0) {
+  661216: function _($0) {
     Module.print(UTF8ToString($0));
   }
 };
@@ -10029,11 +10029,11 @@ var _dmExportedSymbols = Module["_dmExportedSymbols"] = function () {
 var _main = Module["_main"] = function (a0, a1) {
   return (_main = Module["_main"] = wasmExports["Wh"])(a0, a1);
 };
-var _malloc = Module["_malloc"] = function (a0) {
-  return (_malloc = Module["_malloc"] = wasmExports["Xh"])(a0);
-};
 var _free = Module["_free"] = function (a0) {
-  return (_free = Module["_free"] = wasmExports["Yh"])(a0);
+  return (_free = Module["_free"] = wasmExports["Xh"])(a0);
+};
+var _malloc = Module["_malloc"] = function (a0) {
+  return (_malloc = Module["_malloc"] = wasmExports["Yh"])(a0);
 };
 var _htonl2 = function _htonl(a0) {
   return (_htonl2 = wasmExports["_h"])(a0);
