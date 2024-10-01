@@ -361,8 +361,8 @@ function createWasm() {
   };
   function receiveInstance(instance, module) {
     wasmExports = instance.exports;
-    wasmTable = wasmExports["Zh"];
-    addOnInit(wasmExports["Uh"]);
+    wasmTable = wasmExports["$h"];
+    addOnInit(wasmExports["Wh"]);
     removeRunDependency("wasm-instantiate");
     return wasmExports;
   }
@@ -384,14 +384,14 @@ function createWasm() {
 var tempDouble;
 var tempI64;
 var ASM_CONSTS = {
-  277696: function _() {
+  278192: function _() {
     if (navigator.userAgent.toLowerCase().indexOf("chrome") > -1) {
       console.log("%c    %c    Made with Defold    %c    %c    https://www.defold.com", "background: #fd6623; padding:5px 0; border: 5px;", "background: #272c31; color: #fafafa; padding:5px 0;", "background: #39a3e4; padding:5px 0;", "background: #ffffff; color: #000000; padding:5px 0;");
     } else {
       console.log("Made with Defold -=[ https://www.defold.com ]=-");
     }
   },
-  278124: function _($0) {
+  278620: function _($0) {
     var jsResult;
     var isSuccess = 1;
     try {
@@ -405,13 +405,13 @@ var ASM_CONSTS = {
     var stringOnWasmHeap = stringToNewUTF8(jsResult);
     return stringOnWasmHeap;
   },
-  278392: function _() {
+  278888: function _() {
     document.removeEventListener("click", Module.__defold_interaction_listener);
     document.removeEventListener("keyup", Module.__defold_interaction_listener);
     document.removeEventListener("touchend", Module.__defold_interaction_listener);
     Module.__defold_interaction_listener = undefined;
   },
-  278680: function _() {
+  279176: function _() {
     Module.__defold_interaction_listener = function () {
       _dmScript_RunInteractionCallback();
     };
@@ -419,10 +419,10 @@ var ASM_CONSTS = {
     document.addEventListener("keyup", Module.__defold_interaction_listener);
     document.addEventListener("touchend", Module.__defold_interaction_listener);
   },
-  279001: function _($0) {
+  279497: function _($0) {
     Module.printErr(UTF8ToString($0));
   },
-  279040: function _($0) {
+  279536: function _($0) {
     Module.print(UTF8ToString($0));
   }
 };
@@ -491,6 +491,83 @@ function setValue(ptr, value) {
     default:
       abort("invalid type for setValue: ".concat(type));
   }
+}
+var wasmTableMirror = [];
+var wasmTable;
+var getWasmTableEntry = function getWasmTableEntry(funcPtr) {
+  var func = wasmTableMirror[funcPtr];
+  if (!func) {
+    if (funcPtr >= wasmTableMirror.length) wasmTableMirror.length = funcPtr + 1;
+    wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
+  }
+  return func;
+};
+var JsToDef = {
+  _callback_object: null,
+  _callback_string: null,
+  _callback_empty: null,
+  _callback_number: null,
+  _callback_bool: null,
+  send: function send(message_id, message) {
+    if (JsToDef._callback_object) {
+      if (!message_id) {
+        console.warn("You need to send message_id");
+        return;
+      }
+      var msg_id = allocate(intArrayFromString(message_id), ALLOC_NORMAL);
+      switch (_typeof(message)) {
+        case "undefined":
+          getWasmTableEntry(JsToDef._callback_empty)(msg_id);
+          break;
+        case "number":
+          getWasmTableEntry(JsToDef._callback_number)(msg_id, message);
+          break;
+        case "string":
+          var msg_arr = intArrayFromString(message, true);
+          var msg = allocate(msg_arr, ALLOC_NORMAL);
+          getWasmTableEntry(JsToDef._callback_string)(msg_id, msg, msg_arr.length);
+          Module._free(msg);
+          break;
+        case "object":
+          if (message instanceof ArrayBuffer || ArrayBuffer.isView(message)) {
+            var msg_arr = new Uint8Array(ArrayBuffer.isView(message) ? message.buffer : message);
+            var msg = allocate(msg_arr, ALLOC_NORMAL);
+            getWasmTableEntry(JsToDef._callback_string)(msg_id, msg, msg_arr.length);
+            Module._free(msg);
+          } else {
+            var msg = JSON.stringify(message);
+            var msg_arr = intArrayFromString(msg, false);
+            msg = allocate(msg_arr, ALLOC_NORMAL);
+            getWasmTableEntry(JsToDef._callback_object)(msg_id, msg, msg_arr.length);
+            Module._free(msg);
+          }
+          break;
+        case "boolean":
+          var msg = message ? 1 : 0;
+          getWasmTableEntry(JsToDef._callback_bool)(msg_id, msg);
+          break;
+        default:
+          console.warn("Unsupported message format: " + _typeof(message));
+      }
+      Module._free(msg_id);
+    } else {
+      console.warn("You didn't set callback for JsToDef");
+    }
+  }
+};
+function _JsToDef_RegisterCallbacks(callback_object, callback_string, callback_empty, callback_number, callback_bool) {
+  JsToDef._callback_object = callback_object;
+  JsToDef._callback_string = callback_string;
+  JsToDef._callback_empty = callback_empty;
+  JsToDef._callback_number = callback_number;
+  JsToDef._callback_bool = callback_bool;
+}
+function _JsToDef_RemoveCallbacks() {
+  JsToDef._callback_object = null;
+  JsToDef._callback_string = null;
+  JsToDef._callback_empty = null;
+  JsToDef._callback_number = null;
+  JsToDef._callback_bool = null;
 }
 var UTF8Decoder = typeof TextDecoder != "undefined" ? new TextDecoder("utf8") : undefined;
 var UTF8ArrayToString = function UTF8ArrayToString(heapOrArray, idx, maxBytesToRead) {
@@ -4593,16 +4670,6 @@ function _dmDeviceJSQueue(id, samples, sample_count) {
 function _dmGetDeviceSampleRate(id) {
   return window._dmJSDeviceShared.devices[id].sampleRate;
 }
-var wasmTableMirror = [];
-var wasmTable;
-var getWasmTableEntry = function getWasmTableEntry(funcPtr) {
-  var func = wasmTableMirror[funcPtr];
-  if (!func) {
-    if (funcPtr >= wasmTableMirror.length) wasmTableMirror.length = funcPtr + 1;
-    wasmTableMirror[funcPtr] = func = wasmTable.get(funcPtr);
-  }
-  return func;
-};
 function _dmScriptHttpRequestAsync(method, url, headers, arg, onload, onerror, onprogress, send_data, send_data_length, timeout) {
   var xhr = new XMLHttpRequest();
   function listener() {
@@ -9541,6 +9608,8 @@ for (var i = 0; i < 288; ++i) {
   miniTempWebGLIntBuffers[i] = miniTempWebGLIntBuffersStorage.subarray(0, i + 1);
 }
 var wasmImports = {
+  Vh: _JsToDef_RegisterCallbacks,
+  Uh: _JsToDef_RemoveCallbacks,
   b: ___assert_fail,
   Th: ___syscall__newselect,
   Sh: ___syscall_accept4,
@@ -10021,58 +10090,58 @@ var wasmImports = {
 };
 var wasmExports = createWasm();
 var _wasm_call_ctors = function ___wasm_call_ctors() {
-  return (_wasm_call_ctors = wasmExports["Uh"])();
+  return (_wasm_call_ctors = wasmExports["Wh"])();
 };
 var _dmExportedSymbols = Module["_dmExportedSymbols"] = function () {
-  return (_dmExportedSymbols = Module["_dmExportedSymbols"] = wasmExports["Vh"])();
+  return (_dmExportedSymbols = Module["_dmExportedSymbols"] = wasmExports["Xh"])();
 };
 var _main = Module["_main"] = function (a0, a1) {
-  return (_main = Module["_main"] = wasmExports["Wh"])(a0, a1);
+  return (_main = Module["_main"] = wasmExports["Yh"])(a0, a1);
 };
 var _malloc = Module["_malloc"] = function (a0) {
-  return (_malloc = Module["_malloc"] = wasmExports["Xh"])(a0);
+  return (_malloc = Module["_malloc"] = wasmExports["Zh"])(a0);
 };
 var _free = Module["_free"] = function (a0) {
-  return (_free = Module["_free"] = wasmExports["Yh"])(a0);
+  return (_free = Module["_free"] = wasmExports["_h"])(a0);
 };
 var _htonl2 = function _htonl(a0) {
-  return (_htonl2 = wasmExports["_h"])(a0);
+  return (_htonl2 = wasmExports["ai"])(a0);
 };
 var _dmScript_Html5ReportOperationSuccess = Module["_dmScript_Html5ReportOperationSuccess"] = function (a0) {
-  return (_dmScript_Html5ReportOperationSuccess = Module["_dmScript_Html5ReportOperationSuccess"] = wasmExports["$h"])(a0);
+  return (_dmScript_Html5ReportOperationSuccess = Module["_dmScript_Html5ReportOperationSuccess"] = wasmExports["bi"])(a0);
 };
 var _dmScript_RunInteractionCallback = Module["_dmScript_RunInteractionCallback"] = function () {
-  return (_dmScript_RunInteractionCallback = Module["_dmScript_RunInteractionCallback"] = wasmExports["ai"])();
+  return (_dmScript_RunInteractionCallback = Module["_dmScript_RunInteractionCallback"] = wasmExports["ci"])();
 };
 var _setTempRet = function setTempRet0(a0) {
-  return (_setTempRet = wasmExports["bi"])(a0);
+  return (_setTempRet = wasmExports["di"])(a0);
 };
 var _htons2 = function _htons(a0) {
-  return (_htons2 = wasmExports["ci"])(a0);
+  return (_htons2 = wasmExports["ei"])(a0);
 };
 var _ntohs2 = function _ntohs(a0) {
-  return (_ntohs2 = wasmExports["di"])(a0);
+  return (_ntohs2 = wasmExports["fi"])(a0);
 };
 var _JSWriteDump = Module["_JSWriteDump"] = function (a0) {
-  return (_JSWriteDump = Module["_JSWriteDump"] = wasmExports["ei"])(a0);
+  return (_JSWriteDump = Module["_JSWriteDump"] = wasmExports["gi"])(a0);
 };
 var _setThrew2 = function _setThrew(a0, a1) {
-  return (_setThrew2 = wasmExports["fi"])(a0, a1);
+  return (_setThrew2 = wasmExports["hi"])(a0, a1);
 };
 var _stackSave = function stackSave() {
-  return (_stackSave = wasmExports["gi"])();
+  return (_stackSave = wasmExports["ii"])();
 };
 var _stackRestore = function stackRestore(a0) {
-  return (_stackRestore = wasmExports["hi"])(a0);
+  return (_stackRestore = wasmExports["ji"])(a0);
 };
 var _stackAlloc = function stackAlloc(a0) {
-  return (_stackAlloc = wasmExports["ii"])(a0);
+  return (_stackAlloc = wasmExports["ki"])(a0);
 };
 var dynCall_jii = Module["dynCall_jii"] = function (a0, a1, a2) {
-  return (dynCall_jii = Module["dynCall_jii"] = wasmExports["ji"])(a0, a1, a2);
+  return (dynCall_jii = Module["dynCall_jii"] = wasmExports["li"])(a0, a1, a2);
 };
 var dynCall_ji = Module["dynCall_ji"] = function (a0, a1) {
-  return (dynCall_ji = Module["dynCall_ji"] = wasmExports["ki"])(a0, a1);
+  return (dynCall_ji = Module["dynCall_ji"] = wasmExports["mi"])(a0, a1);
 };
 function invoke_vii(index, a1, a2) {
   var sp = _stackSave();
